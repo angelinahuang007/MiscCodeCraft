@@ -1,0 +1,56 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Simple Calculator Project Structure
+
+This document outlines the core structure and guidelines for the Simple Calculator project.
+
+## Core Components
+
+### Main Entry Point
+The application's entry point is [src/main.py](mdc:src/main.py), which initializes the calculator application.
+
+### Calculator Core
+The core calculator logic is organized in the following files:
+
+- [src/calculator/core.py](mdc:src/calculator/core.py): Implements basic arithmetic operations and advanced mathematical functions
+- [src/calculator/memory.py](mdc:src/calculator/memory.py): Handles memory operations (MS, MR, MC)
+- [src/calculator/gui.py](mdc:src/calculator/gui.py): Contains the Tkinter-based GUI implementation
+
+### Testing Structure
+Tests follow a one-to-one mapping with source files:
+
+- [tests/test_core.py](mdc:tests/test_core.py): Tests for core calculation logic
+- [tests/test_memory.py](mdc:tests/test_memory.py): Tests for memory operations
+- [tests/test_gui.py](mdc:tests/test_gui.py): Tests for GUI functionality
+
+## Development Guidelines
+
+1. All new features must follow TDD principles:
+   - Write tests first in the appropriate test file
+   - Implement minimum code to pass tests
+   - Refactor while maintaining test coverage
+
+2. Code Style:
+   - Follow PEP 8 guidelines
+   - Use black for code formatting
+   - Use flake8 for linting
+
+3. Documentation:
+   - Add docstrings to all functions and classes
+   - Keep technical documentation in [docs/technical_docs](mdc:docs/technical_docs)
+   - Update README.md for user-facing changes
+
+4. Error Handling:
+   - All user inputs must be validated
+   - Mathematical errors must be caught and displayed appropriately
+   - Memory operations must handle edge cases
+
+## Feature Implementation Locations
+
+1. Basic Operations: Implement in [src/calculator/core.py](mdc:src/calculator/core.py)
+2. Memory Functions: Implement in [src/calculator/memory.py](mdc:src/calculator/memory.py)
+3. UI Components: Implement in [src/calculator/gui.py](mdc:src/calculator/gui.py)
+4. Event Handling: Split between gui.py and core.py based on responsibility
