@@ -3,7 +3,7 @@
 Dance Edit Preferences Visualizer
 
 This script visualizes the edit preferences for three dance videos (A005, A011, A019)
-showing which parts each person wants to exclude from the final edit.
+showing which parts each person wants to include (green) or exclude (red) from the final edit.
 """
 
 import matplotlib
@@ -82,10 +82,10 @@ def get_next_output_number(output_dir):
     return max(numbers) + 1 if numbers else 1
 
 def get_preference_files(input_dir):
-    """Get all preference files from the input directory."""
+    """Get all preference files from the input directory and group them by person."""
     if not os.path.exists(input_dir):
         print(f"Warning: Input directory '{input_dir}' not found")
-        return []
+        return {}
     
     # Get all .txt files in the input directory
     txt_files = glob.glob(os.path.join(input_dir, '*.txt'))
@@ -93,14 +93,47 @@ def get_preference_files(input_dir):
     # Define colors for different people (cycling if more than available colors)
     colors = ['#4062BB', '#59C3C3', '#95F2D9', '#1CFEBA', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
     
-    preference_files = []
+    # Group files by person
+    people_preferences = {}
+    person_colors = {}
+    
     for i, file_path in enumerate(sorted(txt_files)):
         filename = os.path.basename(file_path)
-        person_name = filename.replace('.txt', '')
-        color = colors[i % len(colors)]
-        preference_files.append((person_name, file_path, color))
+        
+        # Parse filename to get person name and preference type
+        if filename.endswith('_want.txt'):
+            person_name = filename.replace('_want.txt', '')
+            pref_type = 'want'
+        elif filename.endswith('_nowant.txt'):
+            person_name = filename.replace('_nowant.txt', '')
+            pref_type = 'nowant'
+        else:
+            # Handle legacy single file format
+            person_name = filename.replace('.txt', '')
+            pref_type = 'nowant'  # Default to nowant for legacy files
+        
+        if person_name not in people_preferences:
+            people_preferences[person_name] = {}
+            person_colors[person_name] = colors[len(people_preferences) % len(colors)]
+        
+        people_preferences[person_name][pref_type] = file_path
     
-    return preference_files
+    return people_preferences, person_colors
+
+def get_person_colors(num_people):
+    """Generate unique green and red shades for each person."""
+    # Greens: from light to dark
+    green_shades = [
+        '#A5D6A7', '#66BB6A', '#388E3C', '#81C784', '#43A047', '#2E7D32', '#B9F6CA', '#00E676'
+    ]
+    # Reds: from light to dark
+    red_shades = [
+        '#EF9A9A', '#E57373', '#C62828', '#FF8A80', '#D32F2F', '#B71C1C', '#FF5252', '#FF1744'
+    ]
+    # Cycle if more people than shades
+    greens = [green_shades[i % len(green_shades)] for i in range(num_people)]
+    reds = [red_shades[i % len(red_shades)] for i in range(num_people)]
+    return greens, reds
 
 def visualize_preferences():
     """Create a visualization of all edit preferences."""
@@ -113,21 +146,28 @@ def visualize_preferences():
     
     # Get preference files from input directory
     input_dir = 'input'
-    people = get_preference_files(input_dir)
+    people_preferences, _ = get_preference_files(input_dir)
     
-    if not people:
+    if not people_preferences:
         print("No preference files found in the input directory!")
         return
     
-    print(f"Found {len(people)} preference files:")
-    for person_name, file_path, color in people:
-        print(f"  - {person_name}: {file_path}")
+    person_names = list(people_preferences.keys())
+    greens, reds = get_person_colors(len(person_names))
+    person_to_colors = {name: {'want': greens[i], 'nowant': reds[i]} for i, name in enumerate(person_names)}
+    
+    print(f"Found preferences for {len(people_preferences)} people:")
+    for person_name, prefs in people_preferences.items():
+        print(f"  - {person_name}:")
+        for pref_type, file_path in prefs.items():
+            print(f"    {pref_type}: {file_path}")
     
     # Parse all preference files
     all_preferences = {}
-    for person_name, file_path, color in people:
-        preferences = parse_preference_file(file_path)
-        all_preferences[person_name] = preferences
+    for person_name, prefs in people_preferences.items():
+        all_preferences[person_name] = {}
+        for pref_type, file_path in prefs.items():
+            all_preferences[person_name][pref_type] = parse_preference_file(file_path)
     
     # Create the visualization
     fig, ax = plt.subplots(figsize=(15, 6))
@@ -163,40 +203,56 @@ def visualize_preferences():
         # Add video label
         ax.text(-10, i, video, ha='right', va='center', fontweight='bold')
     
-    # Draw excluded time ranges for each person
+    # Draw preference blocks for each person
     legend_elements = []
-    for person_name, file_path, color in people:
-        preferences = all_preferences[person_name]
+    for person_name, prefs in all_preferences.items():
+        want_color = person_to_colors[person_name]['want']
+        nowant_color = person_to_colors[person_name]['nowant']
         
         for video in videos:
-            if video in preferences:
-                for start_sec, end_sec in preferences[video]:
+            # Draw wanted time ranges (person's green shade)
+            if 'want' in prefs and video in prefs['want']:
+                for start_sec, end_sec in prefs['want'][video]:
                     video_index = videos.index(video)
-                    
-                    # Draw the excluded time range
                     rect = patches.Rectangle((start_sec, video_index - bar_height/2), 
                                            end_sec - start_sec, bar_height,
                                            linewidth=1, edgecolor='black',
-                                           facecolor=color, alpha=0.7)
+                                           facecolor=want_color, alpha=0.7)
                     ax.add_patch(rect)
-                    
-                    # Add time label at the bottom of the block
                     center_x = (start_sec + end_sec) / 2
                     bottom_y = video_index - bar_height/2 - 0.05
                     time_label = f"{start_sec//60}:{start_sec%60:02d}-{end_sec//60}:{end_sec%60:02d}"
                     ax.text(center_x, bottom_y, time_label, 
                            ha='center', va='top', fontsize=8, fontweight='bold',
                            color='black', backgroundcolor='white', alpha=0.8)
-        
-        # Add to legend
-        legend_elements.append(patches.Patch(color=color, label=person_name))
+            # Draw unwanted time ranges (person's red shade)
+            if 'nowant' in prefs and video in prefs['nowant']:
+                for start_sec, end_sec in prefs['nowant'][video]:
+                    video_index = videos.index(video)
+                    rect = patches.Rectangle((start_sec, video_index - bar_height/2), 
+                                           end_sec - start_sec, bar_height,
+                                           linewidth=1, edgecolor='black',
+                                           facecolor=nowant_color, alpha=0.7)
+                    ax.add_patch(rect)
+                    center_x = (start_sec + end_sec) / 2
+                    bottom_y = video_index - bar_height/2 - 0.05
+                    time_label = f"{start_sec//60}:{start_sec%60:02d}-{end_sec//60}:{end_sec%60:02d}"
+                    ax.text(center_x, bottom_y, time_label, 
+                           ha='center', va='top', fontsize=8, fontweight='bold',
+                           color='black', backgroundcolor='white', alpha=0.8)
+        # Add to legend: both want and nowant
+        legend_elements.append(patches.Patch(color=want_color, label=f'{person_name} wanted parts'))
+        legend_elements.append(patches.Patch(color=nowant_color, label=f'{person_name} unwanted parts'))
     
     # Add legend
-    ax.legend(handles=legend_elements, loc='upper right', bbox_to_anchor=(1.0, 1.0))
+    ax.legend(handles=legend_elements, loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2)
     
     # Add title
-    plt.title('Dance Video Edit Preferences\n(Blocks = parts to exclude)', 
+    plt.title('Dance Video Edit Preferences\n(Green = wanted parts, Red = unwanted parts)', 
               fontsize=14, fontweight='bold', pad=20)
+    
+    # Adjust layout to make room for bottom legend
+    plt.subplots_adjust(bottom=0.2)
     
     # Adjust layout
     plt.tight_layout()
@@ -219,20 +275,22 @@ def print_summary():
     print("\n=== EDIT PREFERENCES SUMMARY ===\n")
     
     input_dir = 'input'
-    people = get_preference_files(input_dir)
+    people_preferences, person_colors = get_preference_files(input_dir)
     
-    for person_name, file_path, color in people:
+    for person_name, prefs in people_preferences.items():
         print(f"{person_name}'s preferences:")
-        if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-                if content:
-                    for line in content.split('\n'):
-                        print(f"  {line}")
-                else:
-                    print("  No preferences specified")
-        else:
-            print(f"  File {file_path} not found")
+        for pref_type, file_path in prefs.items():
+            print(f"  {pref_type.upper()}:")
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                    if content:
+                        for line in content.split('\n'):
+                            print(f"    {line}")
+                    else:
+                        print("    No preferences specified")
+            else:
+                print(f"    File {file_path} not found")
         print()
 
 if __name__ == "__main__":
