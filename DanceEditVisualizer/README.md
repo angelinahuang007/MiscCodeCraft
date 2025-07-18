@@ -1,15 +1,27 @@
 # Dance Edit Preferences Visualizer
 
-This project visualizes edit preferences for three dance videos (A005, A011, A019) showing which parts each person wants to exclude from the final edit.
+A Python tool that visualizes edit preferences for dance videos, showing which parts participants want to include (green) or exclude (red) from the final edit.
 
-## Files
+## Features
 
-- `tiffany.txt` - Tiffany's edit preferences
-- `chuangege.txt` - Chuangege's edit preferences  
-- `angelina.txt` - Angelina's edit preferences
-- `visualize_edit_preferences.py` - Main visualization script
-- `requirements.txt` - Python dependencies
-- `setup.py` - Setup script for virtual environment
+- **Dual Preference Support**: Each participant can specify both wanted (`*_want.txt`) and unwanted (`*_nowant.txt`) parts
+- **Unique Color Coding**: Each participant gets distinct shades of green for wanted parts and red for unwanted parts
+- **Automatic File Detection**: Automatically detects all preference files in the `input/` folder
+- **Numbered Outputs**: Generates numbered output files to prevent overwriting previous visualizations
+- **Clean Layout**: Legend positioned at bottom to avoid covering visualization content
+
+## File Structure
+
+```
+├── input/                    # Preference files folder
+│   ├── person1_want.txt     # Person 1's wanted parts
+│   ├── person1_nowant.txt   # Person 1's unwanted parts
+│   ├── person2_want.txt     # Person 2's wanted parts
+│   └── person2_nowant.txt   # Person 2's unwanted parts
+├── output/                   # Generated visualizations
+├── visualize_edit_preferences.py
+└── requirements.txt
+```
 
 ## Data Format
 
@@ -28,65 +40,44 @@ Where:
 - `VIDEO_ID` is one of: A005, A011, A019
 - `TIME_RANGE` is in format MM:SS-MM:SS (start-end time)
 
-## Setup Instructions
+## Setup
 
-### Option 1: Automatic Setup (Recommended)
-```bash
-python setup.py
-```
-
-### Option 2: Manual Setup
 1. Create virtual environment:
    ```bash
    python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-2. Activate virtual environment:
-   - Windows: `venv\Scripts\activate`
-   - Unix/Linux/macOS: `source venv/bin/activate`
-
-3. Install dependencies:
+2. Install dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
 ## Usage
 
-1. Activate the virtual environment (if not already activated)
-2. Run the visualization script:
+1. Place preference files in the `input/` folder using the naming convention:
+   - `personname_want.txt` for wanted parts
+   - `personname_nowant.txt` for unwanted parts
+
+2. Run the visualization:
    ```bash
    python visualize_edit_preferences.py
    ```
 
-The script will:
-- Display a summary of all preferences in the terminal
-- Create a visualization showing:
-  - Each video on a separate row
-  - Time axis from 0:00 to 3:30
-  - Colored blocks for excluded time ranges
-  - Different colors for each person's preferences
-- Save the visualization as `edit_preferences_visualization.png`
+3. Check the `output/` folder for generated visualizations (numbered files like `edit_preferences_visualization_01.png`)
 
 ## Visualization Features
 
-- **Video Timeline**: Each video (A005, A011, A019) is shown on a separate row
+- **Video Timeline**: Each video (A005, A011, A019) shown on separate rows
 - **Time Axis**: X-axis shows time from 0:00 to 3:30 with 30-second intervals
-- **Color Coding**: Each person's excluded parts are shown in different colors:
-  - Tiffany: Red (#FF6B6B)
-  - Chuangege: Teal (#4ECDC4)
-  - Angelina: Blue (#45B7D1)
-- **Time Labels**: Each excluded block shows the exact time range
-- **Legend**: Color legend identifies which person each color represents
+- **Color Coding**: 
+  - Green shades = wanted parts (unique per participant)
+  - Red shades = unwanted parts (unique per participant)
+- **Time Labels**: Each block shows exact time range
+- **Bottom Legend**: Clear identification of which color belongs to which participant and preference type
 
 ## Requirements
 
-- Python 3.7 or higher
+- Python 3.7+
 - matplotlib
-- numpy
-
-## Output
-
-The script generates:
-1. Console output showing a summary of all preferences
-2. A PNG file (`edit_preferences_visualization.png`) with the visualization
-3. An interactive matplotlib window (if run in an environment that supports it) 
+- numpy 
